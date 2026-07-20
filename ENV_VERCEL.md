@@ -6,7 +6,7 @@
 
 1. افتح مشروعك على **[Vercel](https://vercel.com)**.
 2. ادخل إلى **Settings** → **Environment Variables**.
-3. أضف المتغيرات التالية (اضغط **Add** لكل واحد):
+3. أضف المتغيرات التالية (اضغط **Add** لكل واحد):  ds
 
 | Key | Value | Environment |
 |-----|--------|-------------|
