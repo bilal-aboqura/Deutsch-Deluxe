@@ -7,9 +7,9 @@
 ### 1) إنشاء قاعدة بيانات سحابية (إن لم تكن لديك)
 
 - ادخل إلى **[Neon](https://neon.tech)** أو **[Supabase](https://supabase.com)** وأنشئ مشروعاً مجانياً.
-- من لوحة المشروع انسخ **رابط الاتصال (Connection string)** لقاعدة PostgreSQL.  
-  يبدو تقريباً هكذا:  
-  `postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`  
+- من لوsحة المشروع انسخ **رابط الاتصال (Connection string)** لقاعدة PostgreSQL.
+  يبدو تقريباً هكذا:
+  `postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`
   **مهم:** استخدم الرابط السحابي (من Neon أو Supabase)، وليس أي رابط من جهازك (localhost).
 
 ### 2) تطبيق الجداول على هذه القاعدة (مرة واحدة من جهازك)
@@ -36,16 +36,17 @@
 1. ادخل إلى مشروعك على **Vercel** → **Settings** → **Environment Variables**.
 2. أضف المتغيرات التالية (اختر بيئة **Production**، ويمكن أيضاً **Preview**):
 
-| اسم المتغير      | القيمة |
-|------------------|--------|
-| `DATABASE_URL`   | **نفس** رابط PostgreSQL من Neon أو Supabase (الذي استخدمته في `.env` و `db:push`). |
-| `NEXTAUTH_SECRET`| أي نص عشوائي طويل (مثلاً 32 حرفاً). يمكن استخدام: https://generate-secret.vercel.app/32 |
-| `NEXTAUTH_URL`   | عنوان موقعك على Vercel بالضبط، مثل: `https://your-app.vercel.app` أو `https://your-domain.com` (بدون شرطة في النهاية). |
+| اسم المتغير | القيمة                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | **نفس** رابط PostgreSQL من Neon أو Supabase (الذي استخدمته في `.env` و `db:push`).                                              |
+| `NEXTAUTH_SECRET`   | أي نص عشوائي طويل (مثلاً 32 حرفاً). يمكن استخدام: https://generate-secret.vercel.app/32                                          |
+| `NEXTAUTH_URL`      | عنوان موقعك على Vercel بالضبط، مثل:`https://your-app.vercel.app` أو `https://your-domain.com` (بدون شرطة في النهاية). |
 
 3. احفظ كل متغير (Save).
 
-**تحذير:**  
-- لا تستخدم `DATABASE_URL` من جهازك المحلي (localhost) على Vercel.  
+**تحذير:**
+
+- لا تستخدم `DATABASE_URL` من جهازك المحلي (localhost) على Vercel.
 - `NEXTAUTH_URL` يجب أن يطابق عنوان الموقع بعد النشر (مع `https://`).
 
 ### 4) إعادة النشر (Redeploy)
@@ -76,9 +77,9 @@ https://your-app.vercel.app/api/health
 
 ## ملخص سريع
 
-1. قاعدة سحابية (Neon/Supabase) ← انسخ رابط الاتصال.  
-2. محلياً: ضع الرابط في `.env` ثم `npm run db:push` (واختيارياً `npm run db:seed`).  
-3. في Vercel: أضف `DATABASE_URL` و `NEXTAUTH_SECRET` و `NEXTAUTH_URL` ثم Redeploy.  
+1. قاعدة سحابية (Neon/Supabase) ← انسخ رابط الاتصال.
+2. محلياً: ضع الرابط في `.env` ثم `npm run db:push` (واختيارياً `npm run db:seed`).
+3. في Vercel: أضف `DATABASE_URL` و `NEXTAUTH_SECRET` و `NEXTAUTH_URL` ثم Redeploy.
 4. تحقق من `/api/health` ثم جرّب الموقع.
 
 إذا نفذت هذه الخطوات وما زال شيء لا يعمل، انسخ نتيجة `/api/health` (أو رسالة الخطأ التي تظهر عند التسجيل) لمعرفة السبب بدقة.
