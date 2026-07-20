@@ -3,6 +3,30 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
+function readCssColor(cssVar: string, fallback: THREE.Vector3): THREE.Vector3 {
+  const el = document.createElement("div");
+  el.style.color = `var(${cssVar})`;
+  el.style.position = "absolute";
+  el.style.visibility = "hidden";
+  document.body.appendChild(el);
+  const computed = getComputedStyle(el).color;
+  el.remove();
+  const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!match) return fallback;
+  return new THREE.Vector3(
+    Number(match[1]) / 255,
+    Number(match[2]) / 255,
+    Number(match[3]) / 255
+  );
+}
+
+function readThemeUniforms() {
+  const primary = readCssColor("--color-primary", new THREE.Vector3(0.6353, 0.9608, 0.8588));
+  const background = readCssColor("--color-background", new THREE.Vector3(0, 0, 0));
+  const isLight = document.documentElement.classList.contains("light") ? 1.0 : 0.0;
+  return { primary, background, isLight };
+}
+
 export default function LoginBackground() {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
@@ -14,11 +38,22 @@ export default function LoginBackground() {
     let clock: THREE.Clock;
     const mouse = new THREE.Vector2(0.5, 0.5);
     const targetMouse = new THREE.Vector2(0.5, 0.5);
+    const initialTheme = readThemeUniforms();
     const uniforms = {
       t: { value: 0.0 },
       r: { value: new THREE.Vector2(1, 1) },
       mouse: { value: new THREE.Vector2(0.5, 0.5) },
+      baseColor: { value: initialTheme.primary },
+      bgColor: { value: initialTheme.background },
+      isLight: { value: initialTheme.isLight },
     };
+
+    function syncTheme() {
+      const theme = readThemeUniforms();
+      uniforms.baseColor.value.copy(theme.primary);
+      uniforms.bgColor.value.copy(theme.background);
+      uniforms.isLight.value = theme.isLight;
+    }
 
     function init() {
       scene = new THREE.Scene();
@@ -54,6 +89,9 @@ export default function LoginBackground() {
                     uniform vec2 r;
                     uniform float t;
                     uniform vec2 mouse;
+                    uniform vec3 baseColor;
+                    uniform vec3 bgColor;
+                    uniform float isLight;
                     varying vec2 vUv;
                     #define PI 3.14159265359
                     mat2 rot(float a) {
@@ -110,45 +148,46 @@ export default function LoginBackground() {
                         vec2 uv = (vUv - 0.5) * 2.0;
                         uv.x *= r.x / r.y;
                         vec2 uv0 = uv;
-                        vec3 col = vec3(0.0);
-                        vec3 baseColor = vec3(0.6353, 0.9608, 0.8588);
+                        vec3 col = bgColor;
                         float time = t * 0.4;
                         float noise = (snoise(uv * 0.5 + time * 0.02) + 1.0) * 0.5;
-                        col += noise * baseColor * 0.08;
+                        float noiseAmt = mix(0.08, 0.05, isLight);
+                        col += noise * baseColor * noiseAmt;
                         vec2 mouse_uv = (mouse - 0.5) * 2.0;
                         mouse_uv.x *= r.x / r.y;
                         float mouseDist = length(uv - mouse_uv);
                         uv += (mouse_uv - uv) * (0.3 / (mouseDist + 0.5));
                         float mouseGlow = 0.1 / (mouseDist + 0.1);
                         mouseGlow *= (sin(t * 1.5) * 0.5 + 0.5) * 0.7 + 0.3;
-                        col += mouseGlow * baseColor * 0.2;
+                        col += mouseGlow * baseColor * mix(0.2, 0.12, isLight);
                         uv *= rot(time * 0.05);
                         float waveNoise = snoise(uv * 2.0 + time * 0.2) * 0.1;
                         float c1 = sin(time * 0.3 + 0.0) * 0.5 + 0.5;
                         float c2 = sin(time * 0.3 + 2.0) * 0.5 + 0.5;
                         float c3 = sin(time * 0.3 + 4.0) * 0.5 + 0.5;
+                        float lineIntensity = mix(0.8, 0.55, isLight);
                         float y1 = uv.y - wave(uv, time * 1.5, 2.0) + waveNoise;
-                        float line1 = glowLine(y1, 0.03, 0.8);
+                        float line1 = glowLine(y1, 0.03, lineIntensity);
                         vec3 color1 = baseColor * (0.75 + 0.35 * c1);
-                        col += color1 * line1;
+                        col += color1 * line1 * mix(1.0, 0.7, isLight);
                         float y2 = uv.y + 0.4 - wave(uv + vec2(1.0, 0.5), time * 1.2, 2.5) + waveNoise * 0.8;
-                        float line2 = glowLine(y2, 0.03, 0.8);
+                        float line2 = glowLine(y2, 0.03, lineIntensity);
                         vec3 color2 = baseColor * (0.7 + 0.4 * c2);
-                        col += color2 * line2;
+                        col += color2 * line2 * mix(1.0, 0.7, isLight);
                         float y3 = uv.y - 0.4 - wave(uv + vec2(-0.5, 1.0), time * 1.8, 1.8) + waveNoise * 1.2;
-                        float line3 = glowLine(y3, 0.03, 0.8);
+                        float line3 = glowLine(y3, 0.03, lineIntensity);
                         vec3 color3 = baseColor * (0.65 + 0.45 * c3);
-                        col += color3 * line3;
+                        col += color3 * line3 * mix(1.0, 0.7, isLight);
                         float dist = length(uv0);
                         float circle = abs(sin(dist * 4.0 - time * 2.0)) * exp(-dist * 0.5);
-                        col += baseColor * circle * 0.28;
-                        col += starfield(uv0 * 2.0 + time * 0.01, t) * baseColor * 0.65;
+                        col += baseColor * circle * mix(0.28, 0.14, isLight);
+                        col += starfield(uv0 * 2.0 + time * 0.01, t) * baseColor * mix(0.65, 0.2, isLight);
                         float centerGlow = exp(-dist * 1.0) * 0.3;
-                        col += centerGlow * baseColor * 0.75;
-                        float vignette = 1.0 - dist * 0.5;
+                        col += centerGlow * baseColor * mix(0.75, 0.35, isLight);
+                        float vignette = 1.0 - dist * mix(0.5, 0.25, isLight);
                         vignette = smoothstep(0.0, 1.0, vignette);
-                        col *= vignette;
-                        col = pow(col, vec3(0.95));
+                        col *= mix(vignette, mix(1.0, vignette, 0.35), isLight);
+                        col = pow(col, vec3(mix(0.95, 1.0, isLight)));
                         gl_FragColor = vec4(col, 1.0);
                     }
                 `,
@@ -191,10 +230,18 @@ export default function LoginBackground() {
     }
 
     init();
+    syncTheme();
     animate();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    });
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("resize", onWindowResize);
@@ -204,5 +251,5 @@ export default function LoginBackground() {
     };
   }, []);
 
-  return <div ref={mountRef} className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true" />;
+  return <div ref={mountRef} className="absolute inset-0 z-0 pointer-events-none bg-[var(--color-background)]" aria-hidden="true" />;
 }
